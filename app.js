@@ -19,7 +19,7 @@ const app = express();
 //i made changes here
 app.use(
   cors({
-    origin: "https://afgc-adjumani-kopey.vercel.app/",
+    origin: "https://afgc-adjumani-kopey.vercel.app",
     credentials: true,
   })
 );
