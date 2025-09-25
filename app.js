@@ -16,16 +16,32 @@ const reportRoute = require("./Routes/reports");
 
 const app = express();
 
-//i made changes here
+const allowedOrigins = [
+  "http://localhost:3000", // for local dev
+  "https://afgc-adjumani-kopey.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "https://afgc-adjumani-kopey.vercel.app",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow non-browser tools like Postman
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
 
-app.use(cookie());
+// apply globally BEFORE your routes
 app.use(express.json());
+
+// ✅ all your routes should now inherit this CORS config
+
+app.use(cookie());
+
 app.use(express.static("files"));
 app.use("/uploads", express.static("uploads"));
 // app.use("/churchapp/events", eventRoutes);
