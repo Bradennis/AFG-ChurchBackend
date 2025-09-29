@@ -12,10 +12,16 @@ const sendEmail = async (to, subject, message) => {
     });
 
     const mailOptions = {
-      from: process.env.EMAIL, // Sender email
-      to, // Recipient email
-      subject, // Email subject
-      text: message, // Plain text message
+      from: `AFG Church <${process.env.EMAIL}>`, // Branded sender
+      to,
+      subject,
+      text: message,
+      html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
+        <h2 style="color:#284268;">Welcome to AFG Church!</h2>
+        <p>${message.replace(/\n/g, "<br>")}</p>
+        <p style="margin-top:24px;font-size:13px;color:#888;">If you did not request this, please ignore this email.</p>
+      </div>`,
+      replyTo: process.env.EMAIL,
     };
 
     await transporter.sendMail(mailOptions);
@@ -85,8 +91,8 @@ const addMember = async (req, res) => {
     });
 
     // Email the login success message
-    const subject = "User Credentials";
-    const message = `Hi ${firstName},\n\n You are welcome to the faithflow app. Here are your credentials to log in to the site.\n\n Username: ${firstName} ${lastName} \n\n Password: ${firstName}1234.\n\nBest regards,\nThe Team`;
+    const subject = "Welcome to AFG Church Portal";
+    const message = `Hi ${firstName},\n\nWelcome to the AFG Church Portal!\n\nYour account has been created. Here are your login details:\n\nUsername: ${firstName} ${lastName}\nPassword: ${firstName}1234\n\nPlease log in and update your password as soon as possible.\n\nBlessings,\nAFG Church Team`;
 
     await sendEmail(email, subject, message);
 

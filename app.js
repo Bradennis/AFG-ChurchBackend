@@ -9,15 +9,15 @@ const authRoute = require("./Routes/authRoute");
 const taskRoute = require("./Routes/taskRoute");
 const donationsRoute = require("./Routes/donations");
 const authMiddleware = require("./MiddleWare/authMiddleware");
-// const eventRoutes = require("./Routes/eventRoute");
 const sermonRoute = require("./Routes/sermon");
 const libraryRoute = require("./Routes/christianLibrary");
 const reportRoute = require("./Routes/reports");
+const attendanceRoute = require("./Routes/AttendanceRoute");
 
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:3000", // for local dev
+  "http://localhost:5173/", // for local dev
   "https://afgc-adjumani-kopey.vercel.app",
 ];
 
@@ -35,10 +35,15 @@ app.use(
   })
 );
 
+// app.use(
+//   cors({
+//     origin: "http://localhost:5173", // your Vite dev server
+//     credentials: true, // if you're using cookies/auth
+//   })
+// );
+
 // apply globally BEFORE your routes
 app.use(express.json());
-
-// ✅ all your routes should now inherit this CORS config
 
 app.use(cookie());
 
@@ -49,6 +54,7 @@ app.use("/churchapp", authRoute);
 app.use("/churchapp/sermon", sermonRoute);
 app.use("/churchapp/library", libraryRoute);
 app.use("/churchapp/report", reportRoute);
+app.use("/churchapp/attendance", attendanceRoute);
 app
   .use("/churchapp/tasks", taskRoute)
   .use("/churchapp/donations", donationsRoute);
