@@ -10,6 +10,7 @@ const {
   exportAttendanceByDate,
   getLowAttendanceMembers,
   getAttendanceMembers,
+  getMemberAttendanceStats,
 } = require("../Controllers/AttendanceController");
 
 // router.get("/records", getAttendanceRecords);
@@ -24,9 +25,6 @@ router.post("/save", saveAttendanceBulk);
 router.get("/summary", getAttendanceSummary);
 router.get("/lowAttendance", getLowAttendanceMembers);
 router.get("/members", getAttendanceMembers);
-router.get(
-  "/stats/:memberId",
-  require("../Controllers/AttendanceController").getMemberAttendanceStats
-);
+router.get("/stats/:memberId", getMemberAttendanceStats);
 
 module.exports = router;

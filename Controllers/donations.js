@@ -26,28 +26,37 @@ const getDonations = async (req, res) => {
 };
 
 const addDonation = async (req, res) => {
-  // i realized that when adding new donations for the first time, the welfare value is always decreased by 1. i will visit this code again later and check what really could be wrong
   try {
     const { date, total, details, expenses } = req.body;
 
-    if (!date || !total || !details) {
+    if (!date || total == null || !details) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Convert string date to a Date object
     const formattedDate = new Date(date);
+
+    const safeDetails = {
+      tithes: Number(details.tithes) || 0,
+      firstOffering: Number(details.firstOffering) || 0,
+      secondOffering: Number(details.secondOffering) || 0,
+      seedOffering: Number(details.seedOffering) || 0,
+      specialAppeal: Number(details.specialAppeal) || 0,
+      welfare: Number(details.welfare) || 0,
+    };
 
     const newDonation = new Donation({
       date: formattedDate,
-      total,
-      details,
-      expenses,
+      total: Number(total),
+      details: safeDetails,
+      expenses: expenses || [],
     });
 
     await newDonation.save();
-    res
-      .status(201)
-      .json({ message: "Donation recorded successfully", newDonation });
+
+    res.status(201).json({
+      message: "Donation recorded successfully",
+      newDonation,
+    });
   } catch (error) {
     console.error("Error recording donation:", error);
     res.status(500).json({ message: "Server error" });

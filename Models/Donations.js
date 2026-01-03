@@ -8,7 +8,7 @@ const expenseSchema = new mongoose.Schema({
 
 const donationSchema = new mongoose.Schema(
   {
-    date: { type: Date, required: true, unique: true },
+    date: { type: Date, required: true },
     total: { type: Number },
     details: {
       tithes: { type: Number },

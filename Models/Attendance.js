@@ -1,4 +1,3 @@
-// models/Attendance.js
 const mongoose = require("mongoose");
 
 const attendanceSchema = new mongoose.Schema(
@@ -10,7 +9,7 @@ const attendanceSchema = new mongoose.Schema(
     },
     meetingDate: { type: String, required: true }, // "YYYY-MM-DD"
     meetingType: { type: String, required: true }, // e.g. "Sunday Service"
-    status: { type: String, enum: ["present", "absent", ""], default: "" },
+    status: { type: String, enum: ["✔️", "❌", ""], default: "" }, // ✅ Updated to emoji
   },
   { timestamps: true }
 );
