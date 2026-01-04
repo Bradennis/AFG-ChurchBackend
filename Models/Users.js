@@ -23,6 +23,9 @@ const UsersSchema = new mongoose.Schema(
       ],
       unique: true,
     },
+    notifications: {
+      email: { type: Boolean, default: true },
+    },
     dateOfBirth: { type: Date },
     residentialAddress: { type: String },
     GPSAddress: { type: String },

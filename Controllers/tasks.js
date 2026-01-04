@@ -90,18 +90,33 @@ const addMember = async (req, res) => {
       username: `${firstName} ${lastName}`,
     });
 
-    // Email the login success message
-    const subject = "Welcome to AFG Church Portal";
-    const message = `Hi ${firstName},\n\nWelcome to the AFG Church Portal!\n\nYour account has been created. Here are your login details:\n\nUsername: ${firstName} ${lastName}\nPassword: ${firstName}1234\n\nPlease log in and update your password as soon as possible.\n\nBlessings,\nAFG Church Team`;
+    // 🔹 Get only admins
+    const admins = await Users.find({ role: "admin" }).select("email");
+    const adminEmails = admins.map((admin) => admin.email);
 
-    await sendEmail(email, subject, message);
+    if (adminEmails.length > 0) {
+      const subject = "New Member Added";
+      const message = `Hello Admin,
+
+A new member has been added to the AFG Church Portal.
+
+Name: ${fullName}
+Role: ${role}
+Contact: ${contact}
+
+Please log in to review the member details.
+
+AFG Church System`;
+
+      await sendEmail(adminEmails, subject, message);
+    }
 
     res.status(201).send({
       newMember,
       message: "Member added successfully",
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).send("Server Error");
   }
 };
