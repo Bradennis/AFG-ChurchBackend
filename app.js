@@ -23,26 +23,26 @@ const allowedOrigins = [
   "https://afgc-adjumani-kopey.vercel.app",
 ];
 
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       if (!origin) return callback(null, true); // allow non-browser tools like Postman
-//       if (allowedOrigins.includes(origin)) {
-//         return callback(null, true);
-//       } else {
-//         return callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     credentials: true,
-//   })
-// );
-
 app.use(
   cors({
-    origin: "http://localhost:5173", // your Vite dev server
-    credentials: true, // if you're using cookies/auth
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow non-browser tools like Postman
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
+
+// app.use(
+//   cors({
+//     origin: "http://localhost:5173", // your Vite dev server
+//     credentials: true, // if you're using cookies/auth
+//   })
+// );
 
 // apply globally BEFORE your routes
 app.use(express.json());
