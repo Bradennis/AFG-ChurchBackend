@@ -1,66 +1,116 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const bycrypt = require("bcryptjs");
+const bcrypt = require("bcryptjs");
 
 const UsersSchema = new mongoose.Schema(
   {
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    otherNames: { type: String },
-    fullName: { type: String },
-    contact: { type: String, required: true },
-    otherContact: { type: String },
-    role: { type: String },
-    dateOfBaptism: { type: Date },
-    username: {
+    role: {
       type: String,
+      enum: ["admin", "member"],
+      default: "member",
     },
+
+    // ===== MEMBER-ONLY FIELDS =====
+    firstName: {
+      type: String,
+      required: function () {
+        return this.role === "member";
+      },
+    },
+
+    lastName: {
+      type: String,
+      required: function () {
+        return this.role === "member";
+      },
+    },
+
+    otherNames: String,
+
+    fullName: String,
+
+    contact: {
+      type: String,
+      required: function () {
+        return this.role === "member";
+      },
+    },
+
+    otherContact: String,
+
+    dateOfBaptism: Date,
 
     email: {
       type: String,
+      unique: true,
+      sparse: true, // allows admins without email
       match: [
         /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
       ],
-      unique: true,
     },
+
     notifications: {
       email: { type: Boolean, default: true },
     },
-    dateOfBirth: { type: Date },
-    residentialAddress: { type: String },
-    GPSAddress: { type: String },
-    streetName: { type: String },
-    gender: { type: String, enum: ["male", "female", "Other"] },
-    maritalStatus: { type: String, enum: ["single", "married", "divorced"] },
-    nameOfSpouse: { type: String },
-    numberOfChildren: { type: Number },
-    profileImage: { type: String },
-    resientialAddress: {
+
+    dateOfBirth: Date,
+    residentialAddress: String,
+    GPSAddress: String,
+    streetName: String,
+
+    gender: {
       type: String,
+      enum: ["male", "female", "Other"],
     },
+
+    maritalStatus: {
+      type: String,
+      enum: ["single", "married", "divorced"],
+    },
+
+    nameOfSpouse: String,
+    numberOfChildren: Number,
+    profileImage: String,
+
+    departments: [String],
+    personOfContact: String,
+    relationToPersonOfContact: String,
+    personsPhone: String,
+
+    // ===== AUTH =====
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
     password: {
       type: String,
-      minLength: [6, "Password must be at least 6 characters long"],
+      required: true,
+      minlength: 6,
     },
-    departments: { type: [String] },
-    personOfContact: { type: String },
-    relationToPersonOfContact: { type: String },
-    personsPhone: { type: String },
   },
   { timestamps: true }
 );
 
-UsersSchema.pre("save", async function () {
-  const salt = await bycrypt.genSalt(10);
-  this.password = await bycrypt.hash(this.password, salt);
+/**
+ * 🔐 HASH PASSWORD ONCE
+ */
+UsersSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
+/**
+ * 🔑 JWT
+ */
 UsersSchema.methods.createJwt = function () {
-  return jwt.sign(
-    { username: this.username, id: this._id },
-    process.env.JWT_SECRET,
-    { expiresIn: "30d" }
-  );
+  return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
 };
 
 module.exports = mongoose.model("User", UsersSchema);

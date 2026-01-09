@@ -4,11 +4,14 @@ const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const cookie = require("cookie-parser");
+
 const connectDb = require("./DataBase/connectDb");
+const createDefaultAdmin = require("./Services/createDefaultAdmin");
+
+// Routes
 const authRoute = require("./Routes/authRoute");
 const taskRoute = require("./Routes/taskRoute");
 const donationsRoute = require("./Routes/donations");
-const authMiddleware = require("./MiddleWare/authMiddleware");
 const sermonRoute = require("./Routes/sermon");
 const libraryRoute = require("./Routes/christianLibrary");
 const reportRoute = require("./Routes/reports");
@@ -19,19 +22,18 @@ const settingsRoute = require("./Routes/settingsRoute");
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:5173/", // for local dev
+  "http://localhost:5173",
   "https://afgc-adjumani-kopey.vercel.app",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow non-browser tools like Postman
+      if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
       }
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
@@ -44,40 +46,34 @@ app.use(
 //   })
 // );
 
-// apply globally BEFORE your routes
 app.use(express.json());
-
 app.use(cookie());
 
 app.use(express.static("files"));
 app.use("/uploads", express.static("uploads"));
-// app.use("/churchapp/events", eventRoutes);
+
 app.use("/churchapp", authRoute);
 app.use("/churchapp/sermon", sermonRoute);
 app.use("/churchapp/library", libraryRoute);
 app.use("/churchapp/report", reportRoute);
 app.use("/churchapp/attendance", attendanceRoute);
 app.use("/churchapp/settings", settingsRoute);
-app
-  .use("/churchapp/tasks", taskRoute)
-  .use("/churchapp/donations", donationsRoute);
-
+app.use("/churchapp/tasks", taskRoute);
+app.use("/churchapp/donations", donationsRoute);
 app.use("/churchapp/messages", broadcastRoute);
 
+// Upload
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "files");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "_" + path.extname(file.originalname));
-  },
+  destination: "files",
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + "_" + path.extname(file.originalname)),
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 app.post("/churchapp/upload", upload.single("file"), (req, res) => {
   res.status(200).json({
-    msg: "file was uploaded successfully",
+    msg: "file uploaded",
     fileName: req.file.filename,
   });
 });
@@ -87,9 +83,11 @@ const PORT = process.env.PORT || 5000;
 const start = async () => {
   try {
     await connectDb(process.env.MONGODB_URI);
-    app.listen(PORT, () => console.log(`App listening on port ${PORT}...`));
+    await createDefaultAdmin();
+
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   } catch (error) {
-    console.error("Server startup failed:", error.message);
+    console.error("Startup error:", error);
   }
 };
 

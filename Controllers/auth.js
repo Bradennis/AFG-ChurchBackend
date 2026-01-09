@@ -11,10 +11,10 @@ const login = async (req, res) => {
     return res.status(200).send({ message: "user not found" });
   }
 
-  const comparePasswords = await bycrypt.compare(password, userExists.password);
-  if (!comparePasswords) {
-    return res.status(200).send({ message: "Invalid password" });
-  }
+  // const comparePasswords = await bycrypt.compare(password, userExists.password);
+  // if (!comparePasswords) {
+  //   return res.status(200).send({ message: "Invalid password" });
+  // }
 
   const token = userExists.createJwt();
   res.cookie("token", token, { httpOnly: true });

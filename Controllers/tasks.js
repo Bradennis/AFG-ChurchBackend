@@ -1,25 +1,35 @@
 const Users = require("../Models/Users");
 const nodemailer = require("nodemailer");
 
+/* ================================
+   GLOBAL MEMBER FILTER
+================================ */
+const MEMBER_FILTER = { username: { $ne: "admin" } };
+
+/* ================================
+   EMAIL SERVICE
+================================ */
 const sendEmail = async (to, subject, message) => {
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.EMAIL, // Your email address
-        pass: process.env.EMAIL_PASSWORD, // Your email password or app password
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD,
       },
     });
 
     const mailOptions = {
-      from: `AFG Church <${process.env.EMAIL}>`, // Branded sender
+      from: `AFG Church <${process.env.EMAIL}>`,
       to,
       subject,
       text: message,
       html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
         <h2 style="color:#284268;">Welcome to AFG Church!</h2>
         <p>${message.replace(/\n/g, "<br>")}</p>
-        <p style="margin-top:24px;font-size:13px;color:#888;">If you did not request this, please ignore this email.</p>
+        <p style="margin-top:24px;font-size:13px;color:#888;">
+          If you did not request this, please ignore this email.
+        </p>
       </div>`,
       replyTo: process.env.EMAIL,
     };
@@ -31,6 +41,9 @@ const sendEmail = async (to, subject, message) => {
   }
 };
 
+/* ================================
+   ADD MEMBER
+================================ */
 const addMember = async (req, res) => {
   try {
     const {
@@ -90,11 +103,11 @@ const addMember = async (req, res) => {
       username: `${firstName} ${lastName}`,
     });
 
-    // 🔹 Get only admins
+    /* 🔹 EMAIL ONLY ADMINS (INCLUDING DEFAULT ADMIN) */
     const admins = await Users.find({ role: "admin" }).select("email");
-    const adminEmails = admins.map((admin) => admin.email);
+    const adminEmails = admins.map((a) => a.email).filter(Boolean);
 
-    if (adminEmails.length > 0) {
+    if (adminEmails.length) {
       const subject = "New Member Added";
       const message = `Hello Admin,
 
@@ -111,7 +124,7 @@ AFG Church System`;
       await sendEmail(adminEmails, subject, message);
     }
 
-    res.status(201).send({
+    res.status(201).json({
       newMember,
       message: "Member added successfully",
     });
@@ -121,11 +134,14 @@ AFG Church System`;
   }
 };
 
+/* ================================
+   GET ALL MEMBERS (EXCLUDES ADMIN)
+================================ */
 const getAllMembers = async (req, res) => {
   try {
     const { category, search } = req.query;
 
-    let query = {};
+    let query = { ...MEMBER_FILTER };
 
     if (category === "adults") {
       query.dateOfBirth = {
@@ -144,29 +160,37 @@ const getAllMembers = async (req, res) => {
       ];
     }
 
-    const members = await Users.find(query);
-    res.status(200).send(members);
+    const members = await Users.find(query).lean();
+    res.status(200).json(members);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).send("Server Error");
   }
 };
 
+/* ================================
+   MEMBERS SUMMARY (EXCLUDES ADMIN)
+================================ */
 const getAllMembersSummary = async (req, res) => {
   try {
     const now = new Date();
     const weekAgo = new Date();
     weekAgo.setDate(now.getDate() - 7);
 
-    const totalMembers = await Users.countDocuments({});
+    const totalMembers = await Users.countDocuments(MEMBER_FILTER);
+
     const newThisWeek = await Users.countDocuments({
+      ...MEMBER_FILTER,
       createdAt: { $gte: weekAgo },
     });
+
     const adults = await Users.countDocuments({
+      ...MEMBER_FILTER,
       dateOfBirth: {
         $lte: new Date(new Date().setFullYear(new Date().getFullYear() - 18)),
       },
     });
+
     const under18 = totalMembers - adults;
 
     res.status(200).json({
@@ -181,46 +205,45 @@ const getAllMembersSummary = async (req, res) => {
   }
 };
 
+/* ================================
+   EDIT MEMBER
+================================ */
 const editMember = async (req, res) => {
   try {
     const memberId = req.params.id;
     const updates = req.body;
 
     Object.keys(updates).forEach((key) => {
-      if (updates[key] === "") {
-        delete updates[key];
-      }
+      if (updates[key] === "") delete updates[key];
     });
 
-    // If any of the name fields are present in the update, construct the fullName
     const { firstName, lastName, otherNames } = updates;
+
     if (firstName || lastName || otherNames) {
       const existingMember = await Users.findById(memberId);
       if (!existingMember) {
-        return res.status(404).send({ message: "Member not found" });
+        return res.status(404).json({ message: "Member not found" });
       }
 
       const updatedFirstName = firstName || existingMember.firstName || "";
       const updatedLastName = lastName || existingMember.lastName || "";
       const updatedOtherNames = otherNames || existingMember.otherNames || "";
 
-      // Concatenate names to form fullName
       updates.fullName =
         `${updatedFirstName} ${updatedOtherNames} ${updatedLastName}`.trim();
     }
 
-    // Update the member document in the database
     const updatedMember = await Users.findByIdAndUpdate(
       memberId,
       { $set: updates },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
     if (!updatedMember) {
-      return res.status(404).send({ message: "Member not found" });
+      return res.status(404).json({ message: "Member not found" });
     }
 
-    res.status(200).send({
+    res.status(200).json({
       message: "Member updated successfully",
       updatedMember,
     });
@@ -230,4 +253,12 @@ const editMember = async (req, res) => {
   }
 };
 
-module.exports = { addMember, getAllMembers, editMember, getAllMembersSummary };
+/* ================================
+   EXPORTS
+================================ */
+module.exports = {
+  addMember,
+  getAllMembers,
+  editMember,
+  getAllMembersSummary,
+};
